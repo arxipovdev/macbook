@@ -11,10 +11,10 @@ NC='\033[0m' # No Color
 
 # Проверка аргументов
 if [ $# -ne 4 ]; then
-  echo -e "${RED}Ошибка: Необходимо указать 4 аргумента${NC}"
-  echo "Пример использования:"
+  echo -e "${RED}Error: Required 4 arguments${NC}"
+  echo "Usage:"
   echo "$0 <root_partition> <efi_partition> <timezone> <user_password>"
-  echo "Пример: $0 /dev/sda5 /dev/sda1 Europe/Moscow \"MySecureP@ss\""
+  echo "Example: $0 /dev/sda5 /dev/sda1 Europe/Moscow \"MySecureP@ss\""
   exit 1
 fi
 
@@ -30,50 +30,53 @@ print_header() {
 }
 
 ### Начало установки ###
-print_header "Монтирование разделов"
+print_header "Mounting partitions"
 umount -R /mnt 2>/dev/null
-echo "Монтируем корневой раздел $root_part в /mnt"
-mount "$root_part" /mnt
+echo "Mounting root partition $root_part to /mnt"
+mount "$root_part" /mnt || { echo -e "${RED}Mount failed!${NC}"; exit 1; }
 mkdir -p /mnt/boot
-echo "Монтируем EFI-раздел $efi_part в /mnt/boot"
-mount "$efi_part" /mnt/boot
+echo "Mounting EFI partition $efi_part to /mnt/boot"
+mount "$efi_part" /mnt/boot || { echo -e "${RED}EFI mount failed!${NC}"; exit 1; }
 
-print_header "Установка базовых пакетов"
+print_header "Installing base packages"
 pacstrap /mnt base linux linux-firmware base-devel linux-headers \
           networkmanager network-manager-applet sudo grub efibootmgr \
-          nano vim neovim ranger git curl dialog
+          nano vim neovim ranger git curl dialog glibc || { echo -e "${RED}Pacstrap failed!${NC}"; exit 1; }
 
-print_header "Генерация fstab"
-genfstab -U /mnt >> /mnt/etc/fstab
+print_header "Generating fstab"
+genfstab -U /mnt >> /mnt/etc/fstab || { echo -e "${RED}Fstab generation failed!${NC}"; exit 1; }
 
 ### Настройка системы внутри chroot ###
-print_header "Вход в chroot-окружение"
-arch-chroot /mnt /bin/bash -ex <<EOF
+print_header "Entering chroot"
+arch-chroot /mnt /bin/bash -ex <<EOF || { echo -e "${RED}Chroot failed!${NC}"; exit 1; }
 
-print_header "Настройка времени и даты"
+# Set English locale for chroot environment
+export LANG=en_US.UTF-8
+
+print_header "Setting timezone"
 ln -sf "/usr/share/zoneinfo/$timezone" /etc/localtime
 hwclock --systohc
 
-print_header "Настройка локалей"
+print_header "Configuring locales"
 echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
 echo "ru_RU.UTF-8 UTF-8" >> /etc/locale.gen
 locale-gen
 echo "LANG=en_US.UTF-8" > /etc/locale.conf
 
-print_header "Настройка имени хоста"
+print_header "Setting hostname"
 echo "arch-macbook" > /etc/hostname
 
-print_header "Создание пользователя"
+print_header "Creating user"
 useradd -m -G wheel -s /bin/bash andrey
 echo "andrey:$user_password" | chpasswd
 
-print_header "Настройка sudo"
+print_header "Configuring sudo"
 echo "%wheel ALL=(ALL) ALL" >> /etc/sudoers
 
-print_header "Включение NetworkManager"
+print_header "Enabling NetworkManager"
 systemctl enable NetworkManager
 
-print_header "Установка Wi-Fi драйверов"
+print_header "Installing Wi-Fi drivers"
 pacman -S --needed git base-devel --noconfirm
 git clone https://aur.archlinux.org/yay.git
 cd yay
@@ -85,13 +88,13 @@ echo "wl" > /etc/modules-load.d/broadcom-wl.conf
 echo "blacklist brcmfmac" > /etc/modprobe.d/broadcom-wl.conf
 echo "blacklist bcma" >> /etc/modprobe.d/broadcom-wl.conf
 
-print_header "Обновление initramfs"
+print_header "Updating initramfs"
 mkinitcpio -P
 
-print_header "Установка загрузчика"
+print_header "Installing bootloader"
 bootctl --path=/boot install
 
-print_header "Создание конфига загрузчика"
+print_header "Creating bootloader config"
 cat > /boot/loader/entries/arch.conf <<CONF
 title Arch Linux MacBook
 linux /vmlinuz-linux
@@ -102,8 +105,8 @@ CONF
 EOF
 
 ### Завершение ###
-print_header "Размонтирование разделов"
+print_header "Unmounting partitions"
 umount -R /mnt
 
-echo -e "${GREEN}Установка завершена!${NC}"
-echo "Перезагрузитесь командой: reboot"
+echo -e "${GREEN}Installation complete!${NC}"
+echo "Reboot with: reboot"
