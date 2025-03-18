@@ -4,12 +4,6 @@
 # Пример запуска: 
 # curl -sL https://raw.githubusercontent.com/arxipovdev/macbook/main/arch_macbook_install.sh | sudo bash -s -- /dev/sda5 /dev/sda1 Europe/Moscow "user_password"
 
-#!/bin/bash
-
-# Скрипт автоматической установки Arch Linux на MacBook Pro 2013
-# Использование:
-# curl -sL https://example.com/installer.sh | sudo bash -s -- /dev/nvme0n1p3 /dev/nvme0n1p1 Europe/Moscow "пароль"
-
 # Цвета для вывода
 RED='\033[0;31m'
 GREEN='\033[0;32m'
