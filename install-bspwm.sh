@@ -1,59 +1,37 @@
 #!/bin/bash
 # Скрипт установки окружения BSPWM для MacBook Pro 13" 2013
 
-### Цвета для вывода в консоль ###
+### Цвета ###
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
-### Проверка прав пользователя ###
+### Проверка прав ###
 if [ "$(id -u)" -eq 0 ]; then
     echo -e "${RED}Error: Do not run this script as root!${NC}" >&2
     exit 1
 fi
 
-### Основные функции ###
+### Конфигурационные файлы ###
 
-# Функция установки Xorg и базовых компонентов
-install_xorg() {
-    echo -e "${GREEN}[1/5] Installing Xorg...${NC}"
-    sudo pacman -S --needed --noconfirm xorg-server xorg-xinit xorg-xsetroot xwallpaper || return 1
-}
-
-# Функция установки окружения
-install_wm() {
-    echo -e "${GREEN}[2/5] Installing window manager...${NC}"
-    sudo pacman -S --needed --noconfirm bspwm sxhkd polybar rofi picom kitty feh || return 1
-}
-
-# Функция установки дополнительных компонентов
-install_utils() {
-    echo -e "${GREEN}[3/5] Installing additional utilities...${NC}"
-    sudo pacman -S --needed --noconfirm \
-        thunar gvfs scrot flameshot pavucontrol \
-        ttf-fira-code ttf-font-awesome noto-fonts \
-        network-manager-applet || return 1
-}
-
-# Функция настройки конфигурации
-configure_dotfiles() {
-    echo -e "${GREEN}[4/5] Configuring dotfiles...${NC}"
-    
-    # Создание необходимых директорий
-    mkdir -p ~/.config/{bspwm,sxhkd,polybar,rofi,kitty}
-
-    # Базовая конфигурация BSPWM
+configure_bspwm() {
     cat > ~/.config/bspwm/bspwmrc <<'EOF'
 #!/bin/sh
+pgrep -x sxhkd >/dev/null || sxhkd &
 picom -b &
 xwallpaper --zoom ~/.wallpaper.jpg &
-sxhkd &
-polybar main &
+$HOME/.config/polybar/launch.sh &
 EOF
+    chmod +x ~/.config/bspwm/bspwmrc
+}
 
-    # Базовая конфигурация SXHKD
+configure_sxhkd() {
     cat > ~/.config/sxhkd/sxhkdrc <<'EOF'
+# Super/Command key (для MacBook)
+super = 133
+
+# Основные сочетания
 super + Return
     kitty
 
@@ -63,44 +41,104 @@ super + d
 super + shift + q
     bspc node -c
 
+# Управление окнами
+super + alt + {h,j,k,l}
+    bspc node -p {west,south,north,east}
+
+super + ctrl + {h,j,k,l}
+    bspc node -s {west,south,north,east}
+
+# Рабочие столы
 super + {_,shift + }{1-9,0}
     bspc {desktop -f,node -d} '^{1-9,10}'
 EOF
+}
 
-    # Настройка .xinitrc
-    cat > ~/.xinitrc <<'EOF'
+configure_polybar() {
+    mkdir -p ~/.config/polybar
+    cat > ~/.config/polybar/config.ini <<'EOF'
+[colors]
+background = #2F343F
+foreground = #FEFEFE
+primary = #5294E2
+secondary = #B8B8B8
+alert = #E53935
+
+[bar/main]
+width = 100%
+height = 24
+radius = 0
+fixed-center = true
+background = ${colors.background}
+foreground = ${colors.foreground}
+
+modules-left = xworkspaces
+modules-center = xwindow
+modules-right = volume date
+
+[module/xworkspaces]
+type = internal/xworkspaces
+pin-workspaces = false
+label-active = %name%
+label-active-background = ${colors.primary}
+label-active-foreground = ${colors.background}
+label-occupied = %name%
+label-urgent = %name%!
+
+[module/xwindow]
+type = internal/xwindow
+label = %title:0:50:...%
+
+[module/volume]
+type = internal/pulseaudio
+format-volume = <label-volume>
+label-volume = VOL %percentage%%
+label-muted = 🔇 MUTED
+
+[module/date]
+type = internal/date
+interval = 1
+date = %Y-%m-%d%
+time = %H:%M:%S
+label = %date% %time%
+EOF
+
+    cat > ~/.config/polybar/launch.sh <<'EOF'
+#!/bin/bash
+killall -q polybar
+while pgrep -u $UID -x polybar >/dev/null; do sleep 1; done
+polybar main -c ~/.config/polybar/config.ini &
+EOF
+    chmod +x ~/.config/polybar/launch.sh
+}
+
+### Основной процесс ###
+echo -e "${GREEN}[1/4] Installing packages...${NC}"
+sudo pacman -S --needed --noconfirm \
+    bspwm sxhkd polybar rofi picom \
+    kitty feh xorg-server xorg-xinit \
+    pulseaudio pavucontrol network-manager-applet \
+    ttf-fira-code ttf-font-awesome noto-fonts
+
+echo -e "${GREEN}[2/4] Configuring BSPWM...${NC}"
+mkdir -p ~/.config/{bspwm,sxhkd}
+configure_bspwm
+configure_sxhkd
+
+echo -e "${GREEN}[3/4] Configuring Polybar...${NC}"
+configure_polybar
+
+echo -e "${GREEN}[4/4] Finalizing setup...${NC}"
+cat > ~/.xinitrc <<'EOF'
 #!/bin/sh
 sxhkd &
 exec bspwm
 EOF
 
-    # Установка прав
-    chmod +x ~/.config/bspwm/bspwmrc
-    chmod +x ~/.xinitrc
-}
+# Установка обоев по умолчанию
+if [ ! -f ~/.wallpaper.jpg ]; then
+    curl -sLo ~/.wallpaper.jpg https://raw.githubusercontent.com/arxipovdev/macbook/main/wallpaper.jpg
+fi
 
-# Функция завершения установки
-finalize() {
-    echo -e "${GREEN}[5/5] Finalizing setup...${NC}"
-    # Установка дефолтных обоев
-    if [ ! -f ~/.wallpaper.jpg ]; then
-        curl -sLo ~/.wallpaper.jpg https://unsplash.com/photos/yC-Yzbqy7PY/download?force=true
-    fi
-}
-
-### Главный процесс выполнения ###
-{
-    install_xorg && 
-    install_wm &&
-    install_utils &&
-    configure_dotfiles &&
-    finalize
-} || {
-    echo -e "${RED}Error occurred during installation!${NC}" >&2
-    exit 1
-}
-
-echo -e "\n${GREEN}Installation completed successfully!${NC}"
-echo -e "${YELLOW}To start the environment:${NC}"
-echo -e "1. Run ${YELLOW}startx${NC}"
-echo -e "2. Set wallpaper with ${YELLOW}xwallpaper --zoom ~/.wallpaper.jpg${NC}"
+echo -e "\n${GREEN}Installation complete!${NC}"
+echo -e "Start with: ${YELLOW}startx${NC}"
