@@ -2,7 +2,7 @@
 
 # Скрипт для автоматической установки Arch Linux на MacBook Pro 2013
 # Пример запуска: 
-# curl -sL -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/arxipovdev/macbook/main/arch_macbook_install.sh | sudo bash -s -- -b /dev/sda1 -r /dev/sda5 -t Europe/Moscow -p "MySecureP@ss123"
+# curl -sL -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/arxipovdev/macbook/main/arch_macbook_install.sh | sudo bash -s -- -b /dev/sda1 -r /dev/sda5 -t Europe/Moscow -u andrey -p "MySecureP@ss123"
 
 ### Цвета для вывода ###
 RED='\033[0;31m'
@@ -13,27 +13,20 @@ NC='\033[0m' # Сброс цвета
 ### Парсинг аргументов ###
 while [[ $# -gt 0 ]]; do
     case $1 in
-        -b|--boot-path)
-        BOOT_PART="$2"
-        shift; shift ;;
-        -r|--root-path)
-        ROOT_PART="$2"
-        shift; shift ;;
-        -t|--timezone)
-        TIMEZONE="$2"
-        shift; shift ;;
-        -p|--password)
-        USER_PASSWORD="$2"
-        shift; shift ;;
+        -b|--boot-path) BOOT_PART="$2"; shift 2 ;;
+        -r|--root-path) ROOT_PART="$2"; shift 2 ;;
+        -t|--timezone) TIMEZONE="$2"; shift 2 ;;
+        -u|--user) USER_NAME="$2"; shift 2 ;;
+        -p|--password) USER_PASSWORD="$2"; shift 2 ;;
         *) echo -e "${RED}Unknown option: $1${NC}"; exit 1 ;;
     esac
 done
 
 ### Проверка аргументов ###
-if [[ -z "$BOOT_PART" || -z "$ROOT_PART" || -z "$TIMEZONE" || -z "$USER_PASSWORD" ]]; then
+if [[ -z "$BOOT_PART" || -z "$ROOT_PART" || -z "$TIMEZONE" || -z "$USER_NAME" || -z "$USER_PASSWORD" ]]; then
     echo -e "${RED}Error: Missing required arguments!${NC}"
-    echo -e "Usage: ${YELLOW}$0 -b <boot> -r <root> -t <tz> -p <pass>${NC}"
-    echo -e "Example: ${YELLOW}$0 -b /dev/sda1 -r /dev/sda5 -t Europe/Moscow -p 'P@ssw0rd'${NC}"
+    echo -e "Usage: ${YELLOW}$0 -b <boot> -r <root> -t <tz> -u <user> -p <pass>${NC}"
+    echo -e "Example: ${YELLOW}$0 -b /dev/sda1 -r /dev/sda5 -t Europe/Moscow -u andrey -p 'P@ssw0rd'${NC}"
     exit 1
 fi
 
@@ -83,8 +76,8 @@ echo "LANG=en_US.UTF-8" > /etc/locale.conf
 echo "arch-macbook" > /etc/hostname
 
 # Пользователь
-useradd -m -G wheel -s /bin/bash user
-echo "user:$USER_PASSWORD" | chpasswd
+useradd -m -G wheel -s /bin/bash "$USER_NAME"
+echo "$USER_NAME:$USER_PASSWORD" | chpasswd
 echo "%wheel ALL=(ALL) ALL" >> /etc/sudoers
 
 # Сеть
