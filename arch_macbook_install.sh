@@ -2,7 +2,7 @@
 
 # Скрипт для автоматической установки Arch Linux на MacBook Pro 2013
 # Пример запуска: 
-# curl -sL https://raw.githubusercontent.com/arxipovdev/macbook/main/arch_macbook_install.sh | sudo bash -s -- -b /dev/sda1 -r /dev/sda5 -t Europe/Moscow -p "MySecureP@ss123"
+# curl -sL -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/arxipovdev/macbook/main/arch_macbook_install.sh | sudo bash -s -- -b /dev/sda1 -r /dev/sda5 -t Europe/Moscow -p "MySecureP@ss123"
 
 ### Цвета для вывода ###
 RED='\033[0;31m'
