@@ -51,7 +51,7 @@ copy_configs() {
     cp ./sxhkdrc ~/.config/sxhkd/
     cp ./polybar ~/.config/polybar/config.ini
     cp ./launch.sh ~/.config/polybar/launch.sh
-    cp ./scripts ~/.config/polybar/scripts/
+    mkdir -p ~/.config/polybar/scripts && cp -rf ./scripts/* ~/.config/polybar/scripts/
     cp ./picom.conf ~/.config/picom/
     cp ./dunstrc ~/.config/dunst/
     cp ./Xresources ~/.Xresources
