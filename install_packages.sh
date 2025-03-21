@@ -83,7 +83,7 @@ install_neovim() {
     print_step "Setting up Neovim ecosystem..."
     
     # Основные пакеты
-    for pkg in neovim fzf ripgrep fd; do
+    for pkg in neovim fzf ripgrep fd ncdu; do
         if ! is_installed "$pkg"; then
             sudo pacman -S --noconfirm "$pkg"
         fi
@@ -96,19 +96,24 @@ install_neovim() {
         fi
     done
 
-    # LazyVim с проверкой
+    # Установка LazyVim через официальный метод
     if [ ! -d ~/.config/nvim ]; then
-        LV_BRANCH='release-1.3/neovim-0.9'
-        INSTALL_SCRIPT_URL="https://raw.githubusercontent.com/LazyVim/starter/main/install.sh"
+        print_step "Installing LazyVim..."
         
-        # Проверка доступности скрипта
-        if curl -fsSL --output /dev/null --silent --head --fail "$INSTALL_SCRIPT_URL"; then
-            bash <(curl -fsSL "$INSTALL_SCRIPT_URL")
-        else
-            print_error "LazyVim install script not found! Trying alternative method..."
-            git clone https://github.com/LazyVim/starter ~/.config/nvim
-            rm -rf ~/.config/nvim/.git
-        fi
+        # Установка зависимостей
+        sudo pacman -S --noconfirm git
+        
+        # Официальный метод установки из документации
+        git clone https://github.com/LazyVim/starter ~/.config/nvim --depth=1
+        
+        # Удаление истории git
+        rm -rf ~/.config/nvim/.git
+        
+        # Установка менеджера плагинов
+        git clone https://github.com/folke/lazy.nvim \
+            ~/.config/nvim/lazy/lazy.nvim --depth=1
+    else
+        print_step "LazyVim configuration already exists, skipping installation"
     fi
 }
 
