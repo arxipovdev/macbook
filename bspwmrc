@@ -1,5 +1,12 @@
 #! /bin/sh
 
+# Маштабирование
+xrdb --merge ~/.Xresources
+# Для GTK-приложений
+export GDK_DPI_SCALE=1.5
+# Для Qt-приложений
+export QT_SCALE_FACTOR=1.5
+
 # настраиваем раскладку клавиатуры
 setxkbmap -layout us,ru -option grp:alt_shift_toggle
 # Запуск заставки рабочиго стола
@@ -8,11 +15,6 @@ feh --bg-scale ~/.wallpaper.jpg &
 picom --config ~/.config/picom/picom.conf &
 # Запуск оповещений dunst
 killall dunst && dunst &
-
-# Для GTK-приложений
-export GDK_DPI_SCALE=1.5
-# Для Qt-приложений
-export QT_SCALE_FACTOR=1.5
 
 pgrep -x sxhkd >/dev/null || sxhkd &
 $HOME/.screenlayout

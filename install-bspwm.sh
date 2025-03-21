@@ -53,6 +53,7 @@ copy_configs() {
     cp ./launch.sh ~/.config/polybar/launch.sh
     cp ./picom.conf ~/.config/picom/
     cp ./dunstrc ~/.config/dunst/
+    cp ./Xresources ~/.Xresources
     # Копирование картинки для обоев
     cp ./wallpaper.jpg ~/.wallpaper.jpg
 
@@ -65,8 +66,9 @@ configure_rofi() {
     cat > ~/.config/rofi/config.rasi <<'EOF'
 configuration {
     modi: "drun";
-    font: "JetBrains Nerd Font 12";
+    font: "JetBrains Nerd Font 20";
     show-icons: true;
+    element-height: 30;
 }
 EOF
 }
