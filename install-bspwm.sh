@@ -21,7 +21,7 @@ install_packages() {
         bspwm sxhkd polybar rofi picom dunst \
         kitty feh xorg-server xorg-xinit zsh \
         pulseaudio pavucontrol network-manager-applet \
-        ttf-jetbrains-nerd xorg-xrandr
+        ttf-jetbrains-mono-nerd xorg-xrandr
 }
 
 configure_fonts() {
