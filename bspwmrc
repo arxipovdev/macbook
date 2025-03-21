@@ -9,6 +9,11 @@ picom --config ~/.config/picom/picom.conf &
 # Запуск оповещений dunst
 killall dunst && dunst &
 
+# Для GTK-приложений
+export GDK_DPI_SCALE=1.5
+# Для Qt-приложений
+export QT_SCALE_FACTOR=1.5
+
 pgrep -x sxhkd >/dev/null || sxhkd &
 $HOME/.screenlayout
 $HOME/.config/polybar/launch.sh

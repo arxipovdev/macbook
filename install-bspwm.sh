@@ -49,7 +49,8 @@ copy_configs() {
     # Копирование конфигов из текущей директории
     cp ./bspwmrc ~/.config/bspwm/
     cp ./sxhkdrc ~/.config/sxhkd/
-    cp ./polybar/* ~/.config/polybar/
+    cp ./polybar ~/.config/polybar/config.ini
+    cp ./launch.sh ~/.config/polybar/launch.sh
     cp ./picom.conf ~/.config/picom/
     cp ./dunstrc ~/.config/dunst/
     # Копирование картинки для обоев
@@ -65,16 +66,7 @@ configure_rofi() {
 configuration {
     modi: "drun";
     font: "JetBrains Nerd Font 12";
-    theme: "everforest";
-}
-
-@theme "everforest" {
-    colors {
-        background: #2B3339;
-        foreground: #D3C6AA;
-        accent: #7FBBB3;
-        urgent: #E67E80;
-    }
+    show-icons: true;
 }
 EOF
 }
