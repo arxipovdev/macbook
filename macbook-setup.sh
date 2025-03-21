@@ -59,7 +59,8 @@ setup_fan_control() {
 setup_shadowsocks() {
     print_step "Configuring Shadowsocks"
     sudo pacman -S --noconfirm shadowsocks-libev
-    [ -f ./shadowsocks_config.json ] && sudo cp ./shadowsocks_config.json /etc/shadowsocks/
+    sudo mkdir -p /etc/shadowsocks
+    [ -f ./shadowsocks_config.json ] && sudo cp -v ./shadowsocks_config.json /etc/shadowsocks/ || print_error "shadowsocks_config.json not found!"
     sudo systemctl enable shadowsocks-libev@shadowsocks_config
 }
 
