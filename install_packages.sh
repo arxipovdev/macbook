@@ -122,7 +122,7 @@ install_dotnet() {
     print_step "Installing .NET SDK..."
     
     if ! is_installed dotnet-sdk; then
-        sudo pacman -S --noconfirm dotnet-sdk
+        sudo pacman -S --noconfirm dotnet-sdk dotnet-sdk-8.0 aspnet-runtime aspnet-runtime-8.0
         dotnet tool install --global dotnet-ef
     fi
 }
