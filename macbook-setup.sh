@@ -1,6 +1,6 @@
 #!/bin/bash
-# Скрипт настройки MacBook Pro 13" 2013 (Arch Linux + BSPWM)
-# Запуск: curl -sL https://example.com/macbook-setup.sh | sudo bash
+# Скрипт полной настройки MacBook Pro 13" 2013 (Arch Linux + BSPWM)
+# Запуск: chmod +x macbook-setup.sh && ./macbook-setup.sh
 
 ### Цвета для вывода ###
 RED='\033[0;31m'
@@ -18,10 +18,13 @@ fi
 print_step() { echo -e "${GREEN}[+]${NC} $1"; }
 print_error() { echo -e "${RED}[!] Error:${NC} $1"; exit 1; }
 
-### 1. Установка Bluetooth ###
+is_installed() { pacman -Qs "$1" >/dev/null 2>&1; }
+package_available() { pacman -Si "$1" >/dev/null 2>&1; }
+
+### 1. Настройка Bluetooth ###
 setup_bluetooth() {
     print_step "Configuring Bluetooth"
-    sudo pacman -S --noconfirm bluez bluez-utils blueman
+    sudo pacman -S --needed --noconfirm bluez bluez-utils blueman
     sudo systemctl enable bluetooth
 }
 
@@ -35,33 +38,58 @@ setup_function_keys() {
 ### 3. Подсветка клавиатуры ###
 setup_keyboard_backlight() {
     print_step "Configuring Keyboard Backlight"
-    yay -S --noconfirm kbdlight
-    sudo echo "ACTION==\"add\", SUBSYSTEM==\"leds\", RUN+=\"/bin/chgrp video /sys/class/leds/smc::kbd_backlight/brightness\"" | sudo tee /etc/udev/rules.d/90-kbdlight.rules
+    if ! is_installed kbdlight; then
+        yay -S --noconfirm kbdlight
+    fi
+    sudo tee /etc/udev/rules.d/90-kbdlight.rules >/dev/null <<EOF
+ACTION=="add", SUBSYSTEM=="leds", RUN+="/bin/chgrp video /sys/class/leds/smc::kbd_backlight/brightness"
+EOF
 }
 
 ### 4. Управление подсветкой экрана ###
 setup_display_backlight() {
     print_step "Configuring Display Backlight"
-    sudo pacman -S --noconfirm light
-    sudo usermod -aG video $USER
-    echo "ACTION==\"add\", SUBSYSTEM==\"backlight\", RUN+=\"/bin/chgrp video /sys/class/backlight/%k/brightness\"" | sudo tee /etc/udev/rules.d/90-backlight.rules
+    if ! is_installed light; then
+        sudo pacman -S --noconfirm light
+    fi
+    sudo usermod -aG video "$USER"
+    sudo tee /etc/udev/rules.d/90-backlight.rules >/dev/null <<EOF
+ACTION=="add", SUBSYSTEM=="backlight", RUN+="/bin/chgrp video /sys/class/backlight/%k/brightness"
+EOF
 }
 
 ### 5. Управление кулером ###
 setup_fan_control() {
     print_step "Configuring Fan Control"
-    yay -S --noconfirm mbpfan-git
-    [ -f ./mbpfan.conf ] && sudo cp ./mbpfan.conf /etc/
-    sudo systemctl enable mbpfan
+    if ! is_installed mbpfan-git; then
+        yay -S --noconfirm mbpfan-git
+    fi
+    if [ -f "./mbpfan.conf" ]; then
+        sudo cp -v ./mbpfan.conf /etc/mbpfan.conf
+    else
+        print_error "mbpfan.conf not found in current directory!"
+    fi
+    sudo systemctl enable mbpfan --now
 }
 
 ### 6. Настройка Shadowsocks ###
 setup_shadowsocks() {
     print_step "Configuring Shadowsocks"
-    sudo pacman -S --noconfirm shadowsocks-libev
+    if ! is_installed shadowsocks-libev; then
+        if package_available shadowsocks-libev; then
+            sudo pacman -S --noconfirm shadowsocks-libev
+        else
+            yay -S --noconfirm shadowsocks-libev
+        fi
+    fi
+    
     sudo mkdir -p /etc/shadowsocks
-    [ -f ./shadowsocks_config.json ] && sudo cp -v ./shadowsocks_config.json /etc/shadowsocks/ || print_error "shadowsocks_config.json not found!"
-    sudo systemctl enable shadowsocks-libev@shadowsocks_config
+    if [ -f "./shadowsocks_config.json" ]; then
+        sudo cp -v ./shadowsocks_config.json /etc/shadowsocks/
+        sudo systemctl enable shadowsocks-libev@shadowsocks_config --now
+    else
+        print_error "shadowsocks_config.json not found!"
+    fi
 }
 
 ### Главный процесс ###
@@ -77,5 +105,6 @@ setup_shadowsocks() {
     exit 1
 }
 
-echo -e "\n${GREEN}Setup completed!${NC}"
-echo -e "${YELLOW}Please reboot your system to apply changes${NC}"
+echo -e "\n${GREEN}Setup completed successfully!${NC}"
+echo -e "${YELLOW}Reboot your system to apply all changes:${NC}"
+echo -e "${YELLOW}sudo reboot${NC}"
