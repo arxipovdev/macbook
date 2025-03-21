@@ -96,9 +96,19 @@ install_neovim() {
         fi
     done
 
-    # LazyVim
+    # LazyVim с проверкой
     if [ ! -d ~/.config/nvim ]; then
-        LV_BRANCH='release-1.3/neovim-0.9' bash <(curl -s https://raw.githubusercontent.com/LazyVim/starter/main/install.sh)
+        LV_BRANCH='release-1.3/neovim-0.9'
+        INSTALL_SCRIPT_URL="https://raw.githubusercontent.com/LazyVim/starter/main/install.sh"
+        
+        # Проверка доступности скрипта
+        if curl -fsSL --output /dev/null --silent --head --fail "$INSTALL_SCRIPT_URL"; then
+            bash <(curl -fsSL "$INSTALL_SCRIPT_URL")
+        else
+            print_error "LazyVim install script not found! Trying alternative method..."
+            git clone https://github.com/LazyVim/starter ~/.config/nvim
+            rm -rf ~/.config/nvim/.git
+        fi
     fi
 }
 

@@ -29,3 +29,6 @@ curl -sL https://raw.githubusercontent.com/arxipovdev/macbook/main/arch_macbook_
 4. Установи и настрой neovim, fzf, ripgrep, fd, lazydocker, lazygit, lazyvim
 5. Установи и настрой dotnet, dotnet ef
 6. Установи и настрой nvm, nodejs, npm, yarn, pnpm
+
+
+Напиши новый скрипт полностью автоматический с установками и настройкми для macbook pro 13 2013 arch linux bspwm и назови его install-packages.sh и сделай его исполняемым, комментарии пиши на русском, а в консоль информацию выводи на англиском как в прежнем скрипте:
