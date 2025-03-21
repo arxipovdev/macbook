@@ -15,130 +15,106 @@ fi
 
 ### Конфигурационные файлы ###
 
-configure_bspwm() {
-    cat > ~/.config/bspwm/bspwmrc <<'EOF'
-#!/bin/sh
-pgrep -x sxhkd >/dev/null || sxhkd &
-picom -b &
-xwallpaper --zoom ~/.wallpaper.jpg &
-$HOME/.config/polybar/launch.sh &
-EOF
+install_packages() {
+    echo -e "${GREEN}[1/8] Installing packages...${NC}"
+    sudo pacman -S --needed --noconfirm \
+        bspwm sxhkd polybar rofi picom dunst \
+        kitty feh xorg-server xorg-xinit zsh \
+        pulseaudio pavucontrol network-manager-applet \
+        ttf-jetbrains-nerd xorg-xrandr
+}
+
+configure_fonts() {
+    echo -e "${GREEN}[2/8] Configuring fonts...${NC}"
+    fc-cache -fv
+}
+
+configure_zsh() {
+    echo -e "${GREEN}[3/8] Configuring ZSH...${NC}"
+    chsh -s /bin/zsh $USER
+}
+
+install_lemurs() {
+    echo -e "${GREEN}[3/9] Installing Lemurs...${NC}"
+    sudo pacman -S --noconfirm lemurs
+    sudo systemctl enable lemurs.service
+}
+
+copy_configs() {
+    echo -e "${GREEN}[5/8] Copying configs...${NC}"
+    
+    # Создание директорий
+    mkdir -p ~/.config/{bspwm,sxhkd,polybar,rofi,picom,dunst}
+
+    # Копирование конфигов из текущей директории
+    cp ./bspwmrc ~/.config/bspwm/
+    cp ./sxhkdrc ~/.config/sxhkd/
+    cp ./polybar/* ~/.config/polybar/
+    cp ./picom.conf ~/.config/picom/
+    cp ./dunstrc ~/.config/dunst/
+    # Копирование картинки для обоев
+    cp ./wallpaper.jpg ~/.wallpaper.jpg
+
     chmod +x ~/.config/bspwm/bspwmrc
 }
 
-configure_sxhkd() {
-    cat > ~/.config/sxhkd/sxhkdrc <<'EOF'
-# Super/Command key (для MacBook)
-super = 133
+configure_rofi() {
+    echo -e "${GREEN}[6/8] Configuring Rofi...${NC}"
+    mkdir -p ~/.config/rofi
+    cat > ~/.config/rofi/config.rasi <<'EOF'
+configuration {
+    modi: "drun";
+    font: "JetBrains Nerd Font 12";
+    theme: "everforest";
+}
 
-# Основные сочетания
-super + Return
-    kitty
-
-super + d
-    rofi -show drun
-
-super + shift + q
-    bspc node -c
-
-# Управление окнами
-super + alt + {h,j,k,l}
-    bspc node -p {west,south,north,east}
-
-super + ctrl + {h,j,k,l}
-    bspc node -s {west,south,north,east}
-
-# Рабочие столы
-super + {_,shift + }{1-9,0}
-    bspc {desktop -f,node -d} '^{1-9,10}'
+@theme "everforest" {
+    colors {
+        background: #2B3339;
+        foreground: #D3C6AA;
+        accent: #7FBBB3;
+        urgent: #E67E80;
+    }
+}
 EOF
 }
 
-configure_polybar() {
-    mkdir -p ~/.config/polybar
-    cat > ~/.config/polybar/config.ini <<'EOF'
-[colors]
-background = #2F343F
-foreground = #FEFEFE
-primary = #5294E2
-secondary = #B8B8B8
-alert = #E53935
+configure_display() {
+    echo -e "${GREEN}[7/8] Configuring display...${NC}"
+    cat >> ~/.xinitrc <<'EOF'
 
-[bar/main]
-width = 100%
-height = 24
-radius = 0
-fixed-center = true
-background = ${colors.background}
-foreground = ${colors.foreground}
+# Установка разрешения
+xrandr --output eDP-1 --mode 2560x1600
 
-modules-left = xworkspaces
-modules-center = xwindow
-modules-right = volume date
-
-[module/xworkspaces]
-type = internal/xworkspaces
-pin-workspaces = false
-label-active = %name%
-label-active-background = ${colors.primary}
-label-active-foreground = ${colors.background}
-label-occupied = %name%
-label-urgent = %name%!
-
-[module/xwindow]
-type = internal/xwindow
-label = %title:0:50:...%
-
-[module/volume]
-type = internal/pulseaudio
-format-volume = <label-volume>
-label-volume = VOL %percentage%%
-label-muted = 🔇 MUTED
-
-[module/date]
-type = internal/date
-interval = 1
-date = %Y-%m-%d%
-time = %H:%M:%S
-label = %date% %time%
+# Переключение раскладки
+setxkbmap -layout us,ru -option grp:alt_space_toggle
 EOF
-
-    cat > ~/.config/polybar/launch.sh <<'EOF'
-#!/bin/bash
-killall -q polybar
-while pgrep -u $UID -x polybar >/dev/null; do sleep 1; done
-polybar main -c ~/.config/polybar/config.ini &
-EOF
-    chmod +x ~/.config/polybar/launch.sh
 }
 
-### Основной процесс ###
-echo -e "${GREEN}[1/4] Installing packages...${NC}"
-sudo pacman -S --needed --noconfirm \
-    bspwm sxhkd polybar rofi picom \
-    kitty feh xorg-server xorg-xinit \
-    pulseaudio pavucontrol network-manager-applet \
-    ttf-fira-code ttf-font-awesome noto-fonts
-
-echo -e "${GREEN}[2/4] Configuring BSPWM...${NC}"
-mkdir -p ~/.config/{bspwm,sxhkd}
-configure_bspwm
-configure_sxhkd
-
-echo -e "${GREEN}[3/4] Configuring Polybar...${NC}"
-configure_polybar
-
-echo -e "${GREEN}[4/4] Finalizing setup...${NC}"
-cat > ~/.xinitrc <<'EOF'
+finalize() {
+    echo -e "${GREEN}[8/8] Finalizing setup...${NC}"
+    cat > ~/.xinitrc <<'EOF'
 #!/bin/sh
 sxhkd &
+dunst &
 exec bspwm
 EOF
 
-# Установка обоев по умолчанию
-if [ ! -f ~/.wallpaper.jpg ]; then
-    curl -sLo ~/.wallpaper.jpg https://raw.githubusercontent.com/arxipovdev/macbook/main/wallpaper.jpg
-fi
+    # Установка обоев по умолчанию
+    if [ ! -f ~/.wallpaper.jpg ]; then
+        curl -sLo ~/.wallpaper.jpg https://example.com/default-wallpaper.jpg
+    fi
+}
+
+### Главный процесс ###
+install_packages && \
+configure_fonts && \
+configure_zsh && \
+install_lemurs && \
+copy_configs && \
+configure_rofi && \
+configure_display && \
+finalize
 
 echo -e "\n${GREEN}Installation complete!${NC}"
 echo -e "Start with: ${YELLOW}startx${NC}"
