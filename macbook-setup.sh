@@ -112,46 +112,80 @@ setup_shadowsocks() {
 
 ### 7. Настройка тачпада ###
 setup_touchpad() {
-    print_step "Configuring Touchpad (mtrack)"
-    if ! is_installed xf86-input-mtrack; then
-        sudo pacman -S --noconfirm xf86-input-mtrack
-    fi
+    print_step "Configuring Touchpad"
     
+    # Установка libinput (рекомендуемый драйвер)
+    if ! is_installed xf86-input-libinput; then
+        sudo pacman -S --noconfirm xf86-input-libinput
+    fi
+
+    # Создание конфигурационного файла жестов
     sudo mkdir -p /etc/X11/xorg.conf.d
-    sudo tee /etc/X11/xorg.conf.d/50-mtrack.conf >/dev/null <<EOF
+    sudo tee /etc/X11/xorg.conf.d/40-libinput.conf >/dev/null <<EOF
 Section "InputClass"
+    Identifier "libinput touchpad catchall"
     MatchIsTouchpad "on"
-    Identifier "Touchpad"
-    Driver "mtrack"
-    Option "Sensitivity" "0.5"
-    Option "FingerLowThreshold" "1"
-    Option "FingerHighThreshold" "5"
-    Option "IgnoreThumb" "true"
-    Option "IgnorePalm" "true"
-    Option "TapButtonMask" "123"
-    Option "TapFingersDown" "12"
-    Option "ScrollCoastDuration" "500"
-    Option "ScrollDistance" "50"
-    Option "ScrollClickTime" "0"
-    Option "ButtonMoveEmulate" "true"
-    Option "ButtonIntegrated" "true"
-    Option "ScrollUpButton" "4"
-    Option "ScrollDownButton" "5"
-    Option "ScrollLeftButton" "6"
-    Option "ScrollRightButton" "7"
-    # Three finger drag
-    Option "ClickFinger3" "2"
+    MatchDevicePath "/dev/input/event*"
+    Driver "libinput"
+    
+    # Basic settings
+    Option "Tapping" "on"
+    Option "NaturalScrolling" "true"
+    Option "AccelSpeed" "0.5"
+    
+    # Multi-finger gestures
+    Option "ClickMethod" "clickfinger"
+    Option "DisableWhileTyping" "true"
+    
+    # Three-finger drag (emulate middle button)
+    Option "ScrollMethod" "two-finger"
+    Option "HorizontalScrolling" "on"
     Option "TapButton3" "2"
-    Option "Drag3Buttons" "1 2 3"
 EndSection
 EOF
-    
-    # Добавляем правило для работы в Wayland (если используется)
-    if [ ! -f "/etc/udev/rules.d/99-touchpad.rules" ]; then
-        sudo tee /etc/udev/rules.d/99-touchpad.rules >/dev/null <<EOF
-ACTION=="add|change", SUBSYSTEM=="input", ATTR{name}=="*Touchpad*", ENV{ID_INPUT_TOUCHPAD}="1", ENV{LIBINPUT_IGNORE_DEVICE}="0"
-EOF
+
+    # Настройка жестов через touchegg (для Wayland/X11)
+    if ! is_installed touchegg; then
+        yay -S --noconfirm touchegg
     fi
+    
+    mkdir -p ~/.config/touchegg
+    tee ~/.config/touchegg/touchegg.conf >/dev/null <<EOF
+<touchégg>
+    <settings>
+        <property name="animation_delay">150</property>
+        <property name="action_delay">0</property>
+    </settings>
+
+    <application name="All">
+        <gesture type="SWIPE" fingers="3" direction="UP">
+            <action type="SEND_KEYS">Control+Alt+Up</action>
+        </gesture>
+        
+        <gesture type="SWIPE" fingers="3" direction="DOWN">
+            <action type="SEND_KEYS">Control+Alt+Down</action>
+        </gesture>
+        
+        <gesture type="SWIPE" fingers="4" direction="LEFT">
+            <action type="SEND_KEYS">Super+Left</action>
+        </gesture>
+        
+        <gesture type="SWIPE" fingers="4" direction="RIGHT">
+            <action type="SEND_KEYS">Super+Right</action>
+        </gesture>
+        
+        <gesture type="PINCH" fingers="2" direction="IN">
+            <action type="SEND_KEYS">Control+minus</action>
+        </gesture>
+        
+        <gesture type="PINCH" fingers="2" direction="OUT">
+            <action type="SEND_KEYS">Control+plus</action>
+        </gesture>
+    </application>
+</touchégg>
+EOF
+
+    systemctl --user enable touchegg --now
 }
 
 ### Главный процесс ###
