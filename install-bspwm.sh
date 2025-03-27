@@ -55,6 +55,7 @@ copy_configs() {
     cp ./picom.conf ~/.config/picom/
     cp ./dunstrc ~/.config/dunst/
     cp ./Xresources ~/.Xresources
+    sudo cp ./00-keyboard.conf /etc/X11/xorg.conf.d/00-keyboard.conf
     # Копирование картинки для обоев
     cp ./wallpaper.jpg ~/.wallpaper.jpg
 
@@ -82,7 +83,7 @@ configure_display() {
 xrandr --output eDP-1 --mode 2560x1600
 
 # Переключение раскладки
-setxkbmap -layout us,ru -option grp:alt_space_toggle
+setxkbmap -layout us,ru -option grp:alt_shift_toggle
 EOF
 }
 

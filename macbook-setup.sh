@@ -188,6 +188,30 @@ EOF
     systemctl --user enable touchegg --now
 }
 
+### 8. Настройка TLP (настройки для оптимизации нагрузки на батарею) ###
+setup_tlp() {
+    print_step "Configuring TLP power management"
+    
+    # Установка TLP
+    if ! is_installed tlp; then
+        sudo pacman -S --noconfirm tlp
+    fi
+    
+    # Активация службы
+    sudo systemctl enable --now tlp
+    
+    # Настройка параметров батареи
+    sudo tee -a /etc/tlp.conf >/dev/null <<EOF
+
+# MacBook Pro 2013 Battery Settings
+START_CHARGE_THRESH_BAT0=40
+STOP_CHARGE_THRESH_BAT0=80
+CPU_BOOST_ON_BAT=0
+EOF
+    
+    echo -e "${YELLOW}[~] TLP configured with battery optimization${NC}"
+}
+
 ### Главный процесс ###
 {
     setup_bluetooth && \
@@ -196,7 +220,8 @@ EOF
     setup_display_backlight && \
     setup_fan_control && \
     setup_shadowsocks && \
-    setup_touchpad
+    setup_touchpad && \
+    setup_tlp
 } || {
     print_error "Setup failed!"
     exit 1
