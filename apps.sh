@@ -15,4 +15,10 @@ firefox \
   libreoffice-still \
   xclip \    # копирование в терминале
 highlight \  # подсветка кода
-
+bat
+# звук
+alsa-utils \
+  pulseaudio \
+  pulseaudio-alsa \
+  pavucontrol \
+  sof-firmware
