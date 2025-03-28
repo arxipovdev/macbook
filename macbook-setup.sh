@@ -185,7 +185,7 @@ EOF
 </touchégg>
 EOF
 
-    systemctl --user enable touchegg --now
+    sudo systemctl enable touchegg --now
 }
 
 ### 8. Настройка TLP (настройки для оптимизации нагрузки на батарею) ###

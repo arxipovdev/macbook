@@ -1,11 +1,11 @@
 #! /bin/sh
 
-# Маштабирование
-xrdb --merge ~/.Xresources
 # Для GTK-приложений
 export GDK_DPI_SCALE=1.5
 # Для Qt-приложений
 export QT_SCALE_FACTOR=1.5
+# Маштабирование
+xrdb -merge ~/.Xresources
 
 # настраиваем раскладку клавиатуры
 setxkbmap -layout us,ru -option grp:alt_shift_toggle
